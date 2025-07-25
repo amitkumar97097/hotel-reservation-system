@@ -1,89 +1,37 @@
-// === FRONTEND (React Component: HotelRoomReservationSystem.jsx) ===
-// Requires: npm install axios
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Button } from "@/components/ui/button";
+// === FRONTEND with React Router ===
+// Add this to App.jsx or main entry point
 
-const HotelRoomReservationSystem = () => {
-  const [rooms, setRooms] = useState({});
-  const [bookedRooms, setBookedRooms] = useState([]);
-  const [numRooms, setNumRooms] = useState(1);
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import HotelRoomReservationSystem from './HotelRoomReservationSystem';
 
-  const fetchRooms = async () => {
-    const res = await axios.get("http://localhost:5000/rooms");
-    setRooms(res.data);
-  };
+const About = () => (
+  <div className="p-4">
+    <h1 className="text-xl font-bold mb-4">About This Project</h1>
+    <p>This app is a hotel room reservation system that prioritizes minimal travel time and optimal room layout.</p>
+  </div>
+);
 
-  useEffect(() => {
-    fetchRooms();
-  }, []);
+const App = () => (
+  <Router>
+    <nav className="flex gap-4 p-4 bg-gray-100 border-b mb-4">
+      <Link to="/" className="text-blue-600">Home</Link>
+      <Link to="/about" className="text-blue-600">About</Link>
+    </nav>
+    <Routes>
+      <Route path="/" element={<HotelRoomReservationSystem />} />
+      <Route path="/about" element={<About />} />
+    </Routes>
+  </Router>
+);
 
-  const bookRooms = async () => {
-    const res = await axios.post("http://localhost:5000/book", { numRooms });
-    setBookedRooms(res.data.booked);
-    fetchRooms();
-  };
+export default App;
 
-  const randomOccupancy = async () => {
-    await axios.post("http://localhost:5000/random");
-    setBookedRooms([]);
-    fetchRooms();
-  };
+// Don't forget to install react-router-dom in frontend:
+// npm install react-router-dom
 
-  const reset = async () => {
-    await axios.post("http://localhost:5000/reset");
-    setBookedRooms([]);
-    fetchRooms();
-  };
-
-  return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Hotel Room Reservation System</h1>
-      <div className="mb-4">
-        <label htmlFor="numRooms" className="mr-2">Rooms to Book (1-5):</label>
-        <input
-          id="numRooms"
-          type="number"
-          min={1}
-          max={5}
-          value={numRooms}
-          onChange={e => setNumRooms(parseInt(e.target.value))}
-          className="border p-1 w-16"
-        />
-        <Button onClick={bookRooms} className="ml-4">Book</Button>
-        <Button onClick={randomOccupancy} className="ml-2">Random Occupancy</Button>
-        <Button onClick={reset} className="ml-2">Reset</Button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2">
-        {[...Array(10)].map((_, i) => {
-          const floor = i + 1;
-          const start = floor === 10 ? 1001 : floor * 100 + 1;
-          const end = floor === 10 ? 1007 : floor * 100 + 10;
-          return (
-            <div key={floor}>
-              <h2 className="font-semibold">Floor {floor}</h2>
-              <div className="flex flex-wrap gap-2">
-                {[...Array(end - start + 1)].map((_, idx) => {
-                  const roomNum = start + idx;
-                  const occupied = rooms[roomNum];
-                  const isBooked = bookedRooms.includes(roomNum);
-                  return (
-                    <div
-                      key={roomNum}
-                      className={`p-2 border rounded w-14 text-center ${occupied ? 'bg-red-300' : isBooked ? 'bg-green-300' : 'bg-white'}`}
-                    >
-                      {roomNum}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-export default HotelRoomReservationSystem;
+// Then in index.js or main.jsx:
+// import React from 'react';
+// import ReactDOM from 'react-dom/client';
+// import App from './App';
+// ReactDOM.createRoot(document.getElementById('root')).render(<App />);
