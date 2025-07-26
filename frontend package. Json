@@ -1,0 +1,140 @@
+// === App.jsx (Remade Frontend for Hotel Management System) ===
+
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Home from './pages/Home';
+import About from './pages/About';
+import NotFound from './pages/NotFound';
+
+const App = () => (
+  <Router>
+    <div className="min-h-screen bg-gray-50">
+      <nav className="flex justify-between items-center p-4 bg-white shadow">
+        <h1 className="text-xl font-bold text-indigo-600">Hotel Management System</h1>
+        <div className="space-x-4">
+          <Link to="/" className="text-gray-700 hover:text-indigo-600">Home</Link>
+          <Link to="/about" className="text-gray-700 hover:text-indigo-600">About</Link>
+        </div>
+      </nav>
+
+      <main className="p-4">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+    </div>
+  </Router>
+);
+
+export default App;
+
+// === pages/Home.jsx ===
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+const apiBase = "https://hotel-reservation-system-j9sd.onrender.com";
+
+const Home = () => {
+  const [rooms, setRooms] = useState({});
+  const [bookedRooms, setBookedRooms] = useState([]);
+  const [numRooms, setNumRooms] = useState(1);
+
+  const fetchRooms = async () => {
+    const res = await axios.get(`${apiBase}/rooms`);
+    setRooms(res.data);
+  };
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const bookRooms = async () => {
+    const res = await axios.post(`${apiBase}/book`, { numRooms });
+    setBookedRooms(res.data.booked);
+    fetchRooms();
+  };
+
+  const randomizeRooms = async () => {
+    await axios.post(`${apiBase}/random`);
+    setBookedRooms([]);
+    fetchRooms();
+  };
+
+  const resetRooms = async () => {
+    await axios.post(`${apiBase}/reset`);
+    setBookedRooms([]);
+    fetchRooms();
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold mb-4">Book Your Rooms</h2>
+
+      <div className="mb-4">
+        <input
+          type="number"
+          min={1}
+          max={5}
+          value={numRooms}
+          onChange={(e) => setNumRooms(Number(e.target.value))}
+          className="border p-1 rounded w-20"
+        />
+        <button onClick={bookRooms} className="ml-2 px-4 py-1 bg-green-500 text-white rounded">Book</button>
+        <button onClick={randomizeRooms} className="ml-2 px-4 py-1 bg-yellow-500 text-white rounded">Random</button>
+        <button onClick={resetRooms} className="ml-2 px-4 py-1 bg-red-500 text-white rounded">Reset</button>
+      </div>
+
+      {[...Array(10)].map((_, floorIndex) => {
+        const floor = floorIndex + 1;
+        const start = floor === 10 ? 1001 : floor * 100 + 1;
+        const end = floor === 10 ? 1007 : floor * 100 + 10;
+        return (
+          <div key={floor} className="mb-4">
+            <h3 className="font-medium">Floor {floor}</h3>
+            <div className="flex flex-wrap gap-2">
+              {[...Array(end - start + 1)].map((_, i) => {
+                const roomNum = start + i;
+                const occupied = rooms[roomNum];
+                const isBooked = bookedRooms.includes(roomNum);
+                return (
+                  <div
+                    key={roomNum}
+                    className={`p-2 border rounded w-14 text-center text-sm ${
+                      occupied ? 'bg-red-300' : isBooked ? 'bg-green-300' : 'bg-white'
+                    }`}
+                  >
+                    {roomNum}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+export default Home;
+
+// === pages/About.jsx ===
+import React from 'react';
+const About = () => (
+  <div>
+    <h2 className="text-2xl font-semibold mb-2">About Hotel Management System</h2>
+    <p>This app helps simulate hotel room reservations with smart booking logic and minimal travel time optimization.</p>
+  </div>
+);
+export default About;
+
+// === pages/NotFound.jsx ===
+import React from 'react';
+const NotFound = () => (
+  <div>
+    <h2 className="text-xl font-bold text-red-600">404 - Page Not Found</h2>
+    <p className="text-gray-700">The page you're looking for does not exist.</p>
+  </div>
+);
+export default NotFound;
