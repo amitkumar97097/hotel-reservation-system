@@ -1,5 +1,4 @@
-# hotel-reservation-system
-# 🏨 Hotel Room Reservation System
+# 🏨 Hotel Management System
 
 This is a full-stack hotel room reservation system built with **React** for the frontend and **Express.js** for the backend. It simulates room booking logic based on proximity and travel time rules.
 
