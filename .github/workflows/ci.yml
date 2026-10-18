@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -5,34 +6,109 @@ on:
     branches: [main, master]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   backend:
     runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        env:
+          MONGO_INITDB_DATABASE: admin
+
     defaults:
       run:
         working-directory: backend
+
+    env:
+      NODE_ENV: test
+      PORT: 5000
+      CLIENT_URL: http://localhost:5173
+      LOG_LEVEL: error
+      MONGODB_URI: mongodb://127.0.0.1:27017/hotel_reservation?replicaSet=rs0
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run format:check
-      - run: npm run build
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Initialize MongoDB replica set
+        env:
+          MONGO_CONTAINER: ${{ job.services.mongodb.id }}
+        run: |
+          docker exec "$MONGO_CONTAINER" mongosh --quiet --eval \
+            'rs.initiate({_id: "rs0", members: [{_id: 0, host: "127.0.0.1:27017"}]})'
+          for i in $(seq 1 30); do
+            if docker exec "$MONGO_CONTAINER" mongosh --quiet --eval \
+              'db.hello().isWritablePrimary' | grep -q true; then
+              echo "MongoDB replica set is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MongoDB replica set did not become ready."
+          exit 1
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
 
   frontend:
     runs-on: ubuntu-latest
+
     defaults:
       run:
         working-directory: frontend
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run build
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
