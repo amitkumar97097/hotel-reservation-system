@@ -1,0 +1,20 @@
+services:
+  mongo:
+    image: mongo:8
+    container_name: hotel-reservation-mongo
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_DATABASE: hotel_reservation
+    ports:
+      - "27017:27017"
+    volumes:
+      - hotel_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hotel_mongo_data:
