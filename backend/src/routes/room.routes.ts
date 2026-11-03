@@ -1,4 +1,5 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
+import { authenticate, requireAdmin } from "../middleware/auth.middleware.js";
 import { z } from "zod";
 import {
   createRoom,
@@ -25,7 +26,7 @@ const availabilitySchema = z.object({
 
 function handleRouteError(
   error: unknown,
-  res: Parameters<Parameters<typeof roomRouter.get>[1]>[1],
+  res: Response,
 ) {
   if (error instanceof RoomError) {
     res.status(error.statusCode).json({
@@ -61,7 +62,7 @@ function handleRouteError(
   });
 }
 
-roomRouter.post("/", async (req, res) => {
+roomRouter.post("/", authenticate, requireAdmin, async (req, res) => {
   try {
     const input = createRoomSchema.parse(req.body);
     const room = await createRoom(input);
