@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { z } from "zod";
 import { AuthError, loginUser, registerUser } from "../services/auth.service.js";
 import { authenticate, type AuthContext } from "../middleware/auth.middleware.js";
@@ -17,7 +17,7 @@ const loginSchema = z.object({
   password: z.string().min(1).max(128),
 });
 
-function sendError(error: unknown, res: Parameters<Parameters<typeof authRouter.post>[1]>[1], next: (error?: unknown) => void) {
+function sendError(error: unknown, res: Response, next: (error?: unknown) => void) {
   if (error instanceof z.ZodError) {
     res.status(400).json({
       success: false,
