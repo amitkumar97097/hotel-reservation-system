@@ -92,7 +92,43 @@ function App() {
     } finally { setBusy(false); }
   }
 
-  async function loadMyBookings() {\n    if (!token) return;\n    const result = await api<Booking[]>("/bookings/mine", {}, token);\n    setBookings(result);\n  }\n\n  async function toggleRoom(room: Room) {\n    setBusy(true); setError("");\n    try {\n      const updated = await api<Room>(`/rooms/${room._id}`, { method: "PATCH", body: JSON.stringify({ isActive: !(room as Room & { isActive?: boolean }).isActive }) }, token);\n      setAdminRooms(current => current.map(item => item._id === updated._id ? updated : item));\n      setMessage(`Room ${updated.roomNumber} updated.`);\n    } catch (err) { setError(err instanceof Error ? err.message : "Unable to update room."); }\n    finally { setBusy(false); }\n  }\n\n  async function cancelBooking(id: string) {\n    setBusy(true); setError(""); setMessage("");\n    try {\n      await api<Booking>(`/bookings/${id}/cancel`, { method: "PATCH" }, token);\n      await loadMyBookings();\n      setMessage("Reservation cancelled.");\n    } catch (err) { setError(err instanceof Error ? err.message : "Unable to cancel booking."); }\n    finally { setBusy(false); }\n  }\n\n  async function downloadInvoice(id: string) {\n    try {\n      const response = await fetch(`${API_URL}/api/v1/bookings/${id}/invoice`, { headers: { Authorization: `Bearer ${token}` } });\n      if (!response.ok) throw new Error("Unable to download invoice.");\n      const blob = await response.blob();\n      const url = URL.createObjectURL(blob);\n      const anchor = document.createElement("a"); anchor.href = url; anchor.download = `staypilot-invoice-${id}.pdf`; anchor.click(); URL.revokeObjectURL(url);\n    } catch (err) { setError(err instanceof Error ? err.message : "Invoice download failed."); }\n  }\n\n  async function loadAvailableRooms() {
+  async function loadMyBookings() {
+    if (!token) return;
+    const result = await api<Booking[]>("/bookings/mine", {}, token);
+    setBookings(result);
+  }
+
+  async function toggleRoom(room: Room) {
+    setBusy(true); setError("");
+    try {
+      const updated = await api<Room>(`/rooms/${room._id}`, { method: "PATCH", body: JSON.stringify({ isActive: !(room as Room & { isActive?: boolean }).isActive }) }, token);
+      setAdminRooms(current => current.map(item => item._id === updated._id ? updated : item));
+      setMessage(`Room ${updated.roomNumber} updated.`);
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to update room."); }
+    finally { setBusy(false); }
+  }
+
+  async function cancelBooking(id: string) {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await api<Booking>(`/bookings/${id}/cancel`, { method: "PATCH" }, token);
+      await loadMyBookings();
+      setMessage("Reservation cancelled.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to cancel booking."); }
+    finally { setBusy(false); }
+  }
+
+  async function downloadInvoice(id: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/bookings/${id}/invoice`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error("Unable to download invoice.");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = `staypilot-invoice-${id}.pdf`; anchor.click(); URL.revokeObjectURL(url);
+    } catch (err) { setError(err instanceof Error ? err.message : "Invoice download failed."); }
+  }
+
+  async function loadAvailableRooms() {
     if (!nights) throw new Error("Check-out must be after check-in.");
     const query = new URLSearchParams({ checkIn, checkOut, guests: String(guests) });
     const result = await api<{ rooms: Room[]; count: number }>(`/rooms/availability?${query.toString()}`);
