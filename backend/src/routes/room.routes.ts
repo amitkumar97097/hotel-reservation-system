@@ -93,7 +93,11 @@ roomRouter.get("/availability", async (req, res) => {
   try {
     const query = availabilitySchema.parse(req.query);
 
-    const result = await getAvailableRooms(query.checkIn, query.checkOut, query.guests);
+    const result = await getAvailableRooms(
+      query.checkIn,
+      query.checkOut,
+      query.guests,
+    );
 
     res.status(200).json({
       success: true,
@@ -103,13 +107,14 @@ roomRouter.get("/availability", async (req, res) => {
     handleRouteError(error, res);
   }
 });
-
-
 roomRouter.patch("/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const input = updateRoomSchema.parse(req.body);
     const room = await updateRoom(req.params.id, input);
-    res.status(200).json({ success: true, data: room });
+    res.status(200).json({
+      success: true,
+      data: room,
+    });
   } catch (error: unknown) {
     handleRouteError(error, res);
   }
