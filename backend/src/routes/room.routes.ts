@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
-import { authenticate, requireAdmin } from "../middleware/auth.middleware.js";
 import { z } from "zod";
+import { authenticate, requireAdmin } from "../middleware/auth.middleware.js";
 import {
   createRoom,
   createRoomSchema,
@@ -107,6 +107,7 @@ roomRouter.get("/availability", async (req, res) => {
     handleRouteError(error, res);
   }
 });
+
 roomRouter.patch("/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const input = updateRoomSchema.parse(req.body);
