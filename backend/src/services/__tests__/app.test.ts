@@ -26,10 +26,7 @@ beforeAll(async () => {
     password: "AdminTest123!",
   });
 
-  await User.updateOne(
-    { email: "admin-test@example.com" },
-    { $set: { role: "admin" } },
-  );
+  await User.updateOne({ email: "admin-test@example.com" }, { $set: { role: "admin" } });
 
   const adminLogin = await loginUser({
     email: "admin-test@example.com",
