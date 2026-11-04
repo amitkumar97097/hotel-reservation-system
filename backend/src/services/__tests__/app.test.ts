@@ -109,6 +109,28 @@ describe("Hotel Reservation API", () => {
     expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  it("requires authentication before creating a booking", async () => {
+    const response = await request(app).post("/api/v1/bookings").send({
+      roomId: new mongoose.Types.ObjectId().toString(),
+      checkIn: "2099-01-10",
+      checkOut: "2099-01-12",
+      guests: 1,
+    });
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe("UNAUTHORIZED");
+  });
+
+  it("returns the current account from the authenticated profile endpoint", async () => {
+    const response = await request(app)
+      .get("/api/v1/auth/me")
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.email).toBe("admin-test@example.com");
+    expect(response.body.data.role).toBe("admin");
+  });
+
   it("returns 404 for an unknown API endpoint", async () => {
     const response = await request(app).get("/api/v1/unknown");
 
