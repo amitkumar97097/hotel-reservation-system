@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
 import { bookingRouter } from "./routes/booking.routes.js";
+import { authRouter } from "./routes/auth.routes.js";
 import { roomRouter } from "./routes/room.routes.js";
 
 export const app = express();
@@ -46,6 +47,7 @@ app.get("/api/v1/health", (_req, res) => {
   });
 });
 
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/bookings", bookingRouter);
 app.use("/api/v1/rooms", roomRouter);
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { BookingError, createBooking } from "../booking.service.js";
 
+function futureDateOffset(days: number): string {
+  const date = new Date();
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 describe("createBooking input validation", () => {
   it("rejects an invalid room ID", async () => {
     await expect(
@@ -8,8 +15,8 @@ describe("createBooking input validation", () => {
         roomId: "invalid-room-id",
         guestName: "Test Guest",
         guestEmail: "test@example.com",
-        checkIn: "2026-10-20",
-        checkOut: "2026-10-23",
+        checkIn: futureDateOffset(2),
+        checkOut: futureDateOffset(5),
         guests: 2,
       }),
     ).rejects.toMatchObject({
@@ -25,8 +32,8 @@ describe("createBooking input validation", () => {
         roomId: "6ad509b4a6028c553af77652",
         guestName: "Test Guest",
         guestEmail: "not-an-email",
-        checkIn: "2026-10-20",
-        checkOut: "2026-10-23",
+        checkIn: futureDateOffset(2),
+        checkOut: futureDateOffset(5),
         guests: 2,
       }),
     ).rejects.toBeInstanceOf(BookingError);
@@ -38,8 +45,8 @@ describe("createBooking input validation", () => {
         roomId: "6ad509b4a6028c553af77652",
         guestName: "Test Guest",
         guestEmail: "test@example.com",
-        checkIn: "2026-10-23",
-        checkOut: "2026-10-20",
+        checkIn: futureDateOffset(10),
+        checkOut: futureDateOffset(8),
         guests: 2,
       }),
     ).rejects.toMatchObject({
@@ -54,8 +61,8 @@ describe("createBooking input validation", () => {
         roomId: "6ad509b4a6028c553af77652",
         guestName: "Test Guest",
         guestEmail: "test@example.com",
-        checkIn: "2026-10-20",
-        checkOut: "2026-10-23",
+        checkIn: futureDateOffset(2),
+        checkOut: futureDateOffset(5),
         guests: 0,
       }),
     ).rejects.toMatchObject({

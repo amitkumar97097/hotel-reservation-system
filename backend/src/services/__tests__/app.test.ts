@@ -3,10 +3,13 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import mongoose from "mongoose";
 import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { app } from "../../app.js";
-import { Room } from "../../models/Room.js";
 import { Booking } from "../../models/Booking.js";
+import { Room } from "../../models/Room.js";
+import { User } from "../../models/User.js";
+import { loginUser, registerUser } from "../../services/auth.service.js";
 
 let mongo: MongoMemoryReplSet | undefined;
+let adminToken = "";
 
 beforeAll(async () => {
   mongo = await MongoMemoryReplSet.create({
@@ -16,6 +19,21 @@ beforeAll(async () => {
   await mongoose.connect(mongo.getUri(), {
     serverSelectionTimeoutMS: 5000,
   });
+
+  await registerUser({
+    name: "Test Admin",
+    email: "admin-test@example.com",
+    password: "AdminTest123!",
+  });
+
+  await User.updateOne({ email: "admin-test@example.com" }, { $set: { role: "admin" } });
+
+  const adminLogin = await loginUser({
+    email: "admin-test@example.com",
+    password: "AdminTest123!",
+  });
+
+  adminToken = adminLogin.token;
 }, 60000);
 
 afterEach(async () => {
@@ -24,6 +42,8 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  await User.deleteOne({ email: "admin-test@example.com" });
+
   if (mongoose.connection.readyState !== 0) {
     await mongoose.disconnect();
   }
@@ -43,12 +63,15 @@ describe("Hotel Reservation API", () => {
   });
 
   it("creates a room through the API", async () => {
-    const response = await request(app).post("/api/v1/rooms").send({
-      roomNumber: "API-101",
-      type: "deluxe",
-      capacity: 2,
-      pricePerNight: 2500,
-    });
+    const response = await request(app)
+      .post("/api/v1/rooms")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        roomNumber: "API-101",
+        type: "deluxe",
+        capacity: 2,
+        pricePerNight: 2500,
+      });
 
     expect(response.status).toBe(201);
     expect(response.body.success).toBe(true);
@@ -71,12 +94,15 @@ describe("Hotel Reservation API", () => {
   });
 
   it("rejects an invalid room payload", async () => {
-    const response = await request(app).post("/api/v1/rooms").send({
-      roomNumber: "",
-      type: "invalid",
-      capacity: 0,
-      pricePerNight: -100,
-    });
+    const response = await request(app)
+      .post("/api/v1/rooms")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({
+        roomNumber: "",
+        type: "invalid",
+        capacity: 0,
+        pricePerNight: -100,
+      });
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);

@@ -1,17 +1,21 @@
 import mongoose from "mongoose";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import { Booking } from "../../models/Booking.js";
 import { Room } from "../../models/Room.js";
 import { BookingError, createBooking } from "../booking.service.js";
 
-const TEST_MONGODB_URI =
-  "mongodb://127.0.0.1:27017/hotel_reservation_test?replicaSet=rs0";
+let mongo: MongoMemoryReplSet | undefined;
 
 beforeAll(async () => {
-  await mongoose.connect(TEST_MONGODB_URI, {
+  mongo = await MongoMemoryReplSet.create({
+    replSet: { count: 1 },
+  });
+
+  await mongoose.connect(mongo.getUri(), {
     serverSelectionTimeoutMS: 5000,
   });
-}, 15000);
+}, 60000);
 
 afterEach(async () => {
   await Booking.deleteMany({});
@@ -19,8 +23,14 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await mongoose.disconnect();
-});
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+
+  if (mongo) {
+    await mongo.stop();
+  }
+}, 30000);
 
 function dateOffset(days: number): string {
   const date = new Date();
@@ -142,7 +152,6 @@ describe("Booking integration tests", () => {
     ]);
 
     const successful = results.filter((result) => result.status === "fulfilled");
-
     const failed = results.filter((result) => result.status === "rejected");
 
     expect(successful).toHaveLength(1);
