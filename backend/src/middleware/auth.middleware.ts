@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { AuthError, verifyToken } from "../services/auth.service.js";
+import { User } from "../models/User.js";
 
 export interface AuthContext {
   userId: string;
@@ -7,7 +8,7 @@ export interface AuthContext {
   role: "user" | "admin";
 }
 
-export const authenticate: RequestHandler = (req, res, next) => {
+export const authenticate: RequestHandler = async (req, res, next) => {
   const authorization = req.header("authorization");
   if (!authorization?.startsWith("Bearer ")) {
     res.status(401).json({
@@ -19,18 +20,30 @@ export const authenticate: RequestHandler = (req, res, next) => {
 
   try {
     const payload = verifyToken(authorization.slice(7).trim());
+    const user = await User.findById(payload.userId).select("email role isActive");
+    if (!user || !user.isActive) {
+      res.status(401).json({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Account is unavailable" },
+      });
+      return;
+    }
+
     res.locals.auth = {
-      userId: payload.userId,
-      email: payload.email,
-      role: payload.role,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
     } satisfies AuthContext;
     next();
   } catch (error) {
-    const statusCode = error instanceof AuthError ? error.statusCode : 401;
-    res.status(statusCode).json({
-      success: false,
-      error: { code: "UNAUTHORIZED", message: "Invalid or expired authentication token" },
-    });
+    if (error instanceof AuthError) {
+      res.status(error.statusCode).json({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Invalid or expired authentication token" },
+      });
+      return;
+    }
+    next(error);
   }
 };
 
