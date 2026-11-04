@@ -4,6 +4,8 @@ import { z } from "zod";
 import {
   createRoom,
   createRoomSchema,
+  updateRoom,
+  updateRoomSchema,
   getAvailableRooms,
   getRoomById,
   listRooms,
@@ -97,6 +99,17 @@ roomRouter.get("/availability", async (req, res) => {
       success: true,
       data: result,
     });
+  } catch (error: unknown) {
+    handleRouteError(error, res);
+  }
+});
+
+
+roomRouter.patch("/:id", authenticate, requireAdmin, async (req, res) => {
+  try {
+    const input = updateRoomSchema.parse(req.body);
+    const room = await updateRoom(req.params.id, input);
+    res.status(200).json({ success: true, data: room });
   } catch (error: unknown) {
     handleRouteError(error, res);
   }
