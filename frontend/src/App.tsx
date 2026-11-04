@@ -47,8 +47,8 @@ function App() {
   const [guests, setGuests] = useState(1);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [adminBookings, setAdminBookings] = useState<Booking[]>([]);
-  const [adminRooms, setAdminRooms] = useState<Room[]>([]);
+  const [adminBookings] = useState<Booking[]>([]);
+  const [adminRooms] = useState<Room[]>([]);
   const [showDashboard, setShowDashboard] = useState(false);
   const [searched, setSearched] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -96,16 +96,6 @@ function App() {
     if (!token) return;
     const result = await api<Booking[]>("/bookings/mine", {}, token);
     setBookings(result);
-  }
-
-  async function toggleRoom(room: Room) {
-    setBusy(true); setError("");
-    try {
-      const updated = await api<Room>(`/rooms/${room._id}`, { method: "PATCH", body: JSON.stringify({ isActive: !(room as Room & { isActive?: boolean }).isActive }) }, token);
-      setAdminRooms(current => current.map(item => item._id === updated._id ? updated : item));
-      setMessage(`Room ${updated.roomNumber} updated.`);
-    } catch (err) { setError(err instanceof Error ? err.message : "Unable to update room."); }
-    finally { setBusy(false); }
   }
 
   async function cancelBooking(id: string) {
