@@ -181,26 +181,43 @@ export async function getAvailableRooms(
   };
 }
 
-
 export const updateRoomSchema = z.object({
   roomNumber: z.string().trim().min(1).max(20).optional(),
   type: roomTypeSchema.optional(),
   capacity: z.number().int().min(1).max(20).optional(),
   pricePerNight: z.number().finite().min(0).max(1_000_000).optional(),
   isActive: z.boolean().optional(),
-}).refine((value) => Object.keys(value).length > 0, { message: "At least one room field is required" });
+}).refine((value) => Object.keys(value).length > 0, {
+  message: "At least one room field is required",
+});
 
-export async function updateRoom(id: string, input: z.infer<typeof updateRoomSchema>) {
-  if (!mongoose.isValidObjectId(id)) throw new RoomError("Invalid room ID", 400);
+export async function updateRoom(
+  id: string,
+  input: z.infer<typeof updateRoomSchema>,
+) {
+  if (!mongoose.isValidObjectId(id)) {
+    throw new RoomError("Invalid room ID", 400);
+  }
   const update = { ...input };
   if (update.roomNumber) update.roomNumber = update.roomNumber.trim();
   try {
-    const room = await Room.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true }).lean();
-    if (!room) throw new RoomError("Room not found", 404);
+    const room = await Room.findByIdAndUpdate(
+      id,
+      { $set: update },
+      { new: true, runValidators: true },
+    ).lean();
+    if (!room) {
+      throw new RoomError("Room not found", 404);
+    }
     return room;
   } catch (error: unknown) {
     if (error instanceof RoomError) throw error;
-    if (typeof error === "object" && error !== null && "code" in error && error.code === 11000) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === 11000
+    ) {
       throw new RoomError("Room number already exists", 409);
     }
     throw error;
