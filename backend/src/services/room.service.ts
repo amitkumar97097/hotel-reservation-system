@@ -192,8 +192,8 @@ export const updateRoomSchema = z
     isActive: z.boolean().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
-  message: "At least one room field is required",
-});
+    message: "At least one room field is required",
+  });
 
 export async function updateRoom(
   id: string,
@@ -202,6 +202,7 @@ export async function updateRoom(
   if (!mongoose.isValidObjectId(id)) {
     throw new RoomError("Invalid room ID", 400);
   }
+
   const update = { ...input };
 
   if (update.roomNumber) {
@@ -223,6 +224,7 @@ export async function updateRoom(
     if (error instanceof RoomError) {
       throw error;
     }
+
     if (
       typeof error === "object" &&
       error !== null &&
@@ -231,6 +233,7 @@ export async function updateRoom(
     ) {
       throw new RoomError("Room number already exists", 409);
     }
+
     throw error;
   }
 }
