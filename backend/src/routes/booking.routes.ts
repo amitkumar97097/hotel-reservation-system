@@ -148,8 +148,13 @@ function createInvoicePdf(lines: string[]): Buffer {
 bookingRouter.get("/:id/invoice", authenticate, async (req, res, next) => {
   try {
     const auth = res.locals.auth as AuthContext;
-    const filter =\n      auth.role === "admin"\n        ? { _id: req.params.id }\n        : { _id: req.params.id, user: auth.userId };
-    const booking = await Booking.findOne(filter)\n      .populate("room", "roomNumber type")\n      .lean();
+    const filter =
+      auth.role === "admin"
+        ? { _id: req.params.id }
+        : { _id: req.params.id, user: auth.userId };
+    const booking = await Booking.findOne(filter)
+      .populate("room", "roomNumber type")
+      .lean();
     if (!booking) {
       res.status(404).json({ success: false, error: { code: "NOT_FOUND", message: "Booking not found" } });
       return;
