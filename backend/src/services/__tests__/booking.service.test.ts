@@ -13,6 +13,7 @@ describe("createBooking input validation", () => {
     await expect(
       createBooking({
         roomId: "invalid-room-id",
+        userId: "507f1f77bcf86cd799439011",
         guestName: "Test Guest",
         guestEmail: "test@example.com",
         checkIn: futureDateOffset(2),
@@ -30,6 +31,7 @@ describe("createBooking input validation", () => {
     await expect(
       createBooking({
         roomId: "6ad509b4a6028c553af77652",
+        userId: "507f1f77bcf86cd799439011",
         guestName: "Test Guest",
         guestEmail: "not-an-email",
         checkIn: futureDateOffset(2),
@@ -43,6 +45,7 @@ describe("createBooking input validation", () => {
     await expect(
       createBooking({
         roomId: "6ad509b4a6028c553af77652",
+        userId: "507f1f77bcf86cd799439011",
         guestName: "Test Guest",
         guestEmail: "test@example.com",
         checkIn: futureDateOffset(10),
@@ -59,6 +62,7 @@ describe("createBooking input validation", () => {
     await expect(
       createBooking({
         roomId: "6ad509b4a6028c553af77652",
+        userId: "507f1f77bcf86cd799439011",
         guestName: "Test Guest",
         guestEmail: "test@example.com",
         checkIn: futureDateOffset(2),
