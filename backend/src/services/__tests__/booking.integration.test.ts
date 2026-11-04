@@ -63,6 +63,7 @@ describe("Booking integration tests", () => {
     const booking = await createBooking({
       ...bookingDates(),
       roomId: room.id,
+      userId: "507f1f77bcf86cd799439011",
       guestName: "Test Guest",
       guestEmail: "test@example.com",
       guests: 2,
@@ -85,6 +86,7 @@ describe("Booking integration tests", () => {
     await createBooking({
       ...dates,
       roomId: room.id,
+      userId: "507f1f77bcf86cd799439011",
       guestName: "First Guest",
       guestEmail: "first@example.com",
       guests: 2,
@@ -94,6 +96,7 @@ describe("Booking integration tests", () => {
       createBooking({
         ...dates,
         roomId: room.id,
+        userId: "507f1f77bcf86cd799439011",
         guestName: "Second Guest",
         guestEmail: "second@example.com",
         guests: 2,
@@ -113,6 +116,7 @@ describe("Booking integration tests", () => {
     await createBooking({
       ...bookingDates(2),
       roomId: room.id,
+      userId: "507f1f77bcf86cd799439011",
       guestName: "First Guest",
       guestEmail: "first@example.com",
       guests: 2,
@@ -121,6 +125,7 @@ describe("Booking integration tests", () => {
     const secondBooking = await createBooking({
       ...bookingDates(5),
       roomId: room.id,
+      userId: "507f1f77bcf86cd799439011",
       guestName: "Next Guest",
       guestEmail: "next@example.com",
       guests: 2,
@@ -138,6 +143,7 @@ describe("Booking integration tests", () => {
       createBooking({
         ...dates,
         roomId: room.id,
+        userId: "507f1f77bcf86cd799439011",
         guestName: "Concurrent Guest One",
         guestEmail: "one@example.com",
         guests: 2,
@@ -145,6 +151,7 @@ describe("Booking integration tests", () => {
       createBooking({
         ...dates,
         roomId: room.id,
+        userId: "507f1f77bcf86cd799439011",
         guestName: "Concurrent Guest Two",
         guestEmail: "two@example.com",
         guests: 2,
