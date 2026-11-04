@@ -1,9 +1,11 @@
 import { Router, type Response } from "express";
-import { authenticate, requireAdmin } from "../middleware/auth.middleware.js";
 import { z } from "zod";
+import { authenticate, requireAdmin } from "../middleware/auth.middleware.js";
 import {
   createRoom,
   createRoomSchema,
+  updateRoom,
+  updateRoomSchema,
   getAvailableRooms,
   getRoomById,
   listRooms,
@@ -91,11 +93,32 @@ roomRouter.get("/availability", async (req, res) => {
   try {
     const query = availabilitySchema.parse(req.query);
 
-    const result = await getAvailableRooms(query.checkIn, query.checkOut, query.guests);
+    const result = await getAvailableRooms(
+      query.checkIn,
+      query.checkOut,
+      query.guests,
+    );
 
     res.status(200).json({
       success: true,
       data: result,
+    });
+  } catch (error: unknown) {
+    handleRouteError(error, res);
+  }
+});
+
+roomRouter.patch("/:id", authenticate, requireAdmin, async (req, res) => {
+  try {
+    const input = updateRoomSchema.parse(req.body);
+    const roomId = req.params.id;
+    if (typeof roomId !== "string") {
+      throw new RoomError("Invalid room ID", 400);
+    }
+    const room = await updateRoom(roomId, input);
+    res.status(200).json({
+      success: true,
+      data: room,
     });
   } catch (error: unknown) {
     handleRouteError(error, res);

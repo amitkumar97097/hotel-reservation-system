@@ -8,6 +8,12 @@ const bookingSchema = new Schema(
       unique: true,
       index: true,
     },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     guestName: {
       type: String,
       required: true,

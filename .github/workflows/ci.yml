@@ -72,6 +72,9 @@ jobs:
           docker logs hotel-mongodb
           exit 1
 
+      - name: Apply Prettier formatting
+        run: npm run format
+
       - name: Check formatting
         run: npm run format:check
 

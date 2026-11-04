@@ -4,7 +4,8 @@ import { BedDouble, CalendarDays, CheckCircle2, LogIn, LogOut, Search, ShieldChe
 const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 type User = { id: string; name: string; email: string; role: "user" | "admin" };
-type Room = { _id: string; roomNumber: string; type: "standard" | "deluxe" | "suite"; capacity: number; pricePerNight: number };
+type Room = { _id: string; roomNumber: string; type: "standard" | "deluxe" | "suite"; capacity: number; pricePerNight: number; isActive?: boolean };
+type Booking = { _id: string; bookingReference: string; checkIn: string; checkOut: string; guests: number; totalPrice: number; status: "confirmed" | "cancelled"; room?: { roomNumber: string; type: string } };
 type ApiEnvelope<T> = { success: boolean; data: T; error?: { message?: string } };
 
 async function api<T>(path: string, options: RequestInit = {}, token?: string): Promise<T> {
@@ -45,6 +46,10 @@ function App() {
   });
   const [guests, setGuests] = useState(1);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [adminBookings] = useState<Booking[]>([]);
+  const [adminRooms] = useState<Room[]>([]);
+  const [showDashboard, setShowDashboard] = useState(false);
   const [searched, setSearched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -85,6 +90,32 @@ function App() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to authenticate.");
     } finally { setBusy(false); }
+  }
+
+  async function loadMyBookings() {
+    if (!token) return;
+    const result = await api<Booking[]>("/bookings/mine", {}, token);
+    setBookings(result);
+  }
+
+  async function cancelBooking(id: string) {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      await api<Booking>(`/bookings/${id}/cancel`, { method: "PATCH" }, token);
+      await loadMyBookings();
+      setMessage("Reservation cancelled.");
+    } catch (err) { setError(err instanceof Error ? err.message : "Unable to cancel booking."); }
+    finally { setBusy(false); }
+  }
+
+  async function downloadInvoice(id: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/v1/bookings/${id}/invoice`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error("Unable to download invoice.");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = `staypilot-invoice-${id}.pdf`; anchor.click(); URL.revokeObjectURL(url);
+    } catch (err) { setError(err instanceof Error ? err.message : "Invoice download failed."); }
   }
 
   async function loadAvailableRooms() {
@@ -141,7 +172,7 @@ function App() {
             <span><span className="block text-sm font-semibold tracking-[0.18em]">STAYPILOT</span><span className="mt-1 block text-xs text-slate-500">Hotel reservations</span></span>
           </a>
           {user ? (
-            <div className="flex items-center gap-3 text-sm"><span className="hidden text-slate-300 sm:inline">Hi, {user.name}</span><button onClick={logout} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-slate-200 hover:bg-white/5"><LogOut size={16} /> Sign out</button></div>
+            <div className="flex items-center gap-3 text-sm"><button onClick={() => setShowDashboard(v => !v)} className="rounded-xl border border-white/15 px-3 py-2 text-slate-200 hover:bg-white/5">Dashboard</button><span className="hidden text-slate-300 sm:inline">Hi, {user.name}</span><button onClick={logout} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-3 py-2 text-slate-200 hover:bg-white/5"><LogOut size={16} /> Sign out</button></div>
           ) : <a href="#account" className="rounded-xl border border-white/15 px-4 py-2 text-sm hover:bg-white/5">Sign in</a>}
         </header>
 
@@ -166,6 +197,8 @@ function App() {
 
         {(message || error) && <div role="status" className={`mb-6 rounded-xl border px-4 py-3 text-sm ${error ? "border-rose-400/30 bg-rose-400/10 text-rose-200" : "border-emerald-300/30 bg-emerald-300/10 text-emerald-100"}`}>{error || message}</div>}
 
+        {showDashboard && user && <section className="mb-12 rounded-3xl border border-white/10 bg-[#101827]/80 p-6 sm:p-8"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold tracking-[0.2em] text-amber-200">ACCOUNT OVERVIEW</p><h2 className="mt-2 text-2xl font-semibold">{user.role === "admin" ? "Admin dashboard" : "My bookings"}</h2></div><span className="rounded-full border border-white/10 px-3 py-1 text-xs capitalize text-slate-300">{user.role}</span></div><div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-white/[0.04] p-4"><p className="text-xs text-slate-400">My reservations</p><p className="mt-2 text-2xl font-semibold">{bookings.length}</p></div><div className="rounded-2xl bg-white/[0.04] p-4"><p className="text-xs text-slate-400">Active reservations</p><p className="mt-2 text-2xl font-semibold">{bookings.filter(b => b.status === "confirmed").length}</p></div>{user.role === "admin" && <div className="rounded-2xl bg-white/[0.04] p-4"><p className="text-xs text-slate-400">All reservations / rooms</p><p className="mt-2 text-2xl font-semibold">{adminBookings.length} / {adminRooms.length}</p></div>}</div><h3 className="mt-7 text-lg font-semibold">Reservation history</h3><div className="mt-3 space-y-3">{bookings.length ? bookings.map(booking => <article key={booking._id} className="flex flex-col justify-between gap-4 rounded-2xl border border-white/10 p-4 sm:flex-row sm:items-center"><div><p className="font-medium">{booking.bookingReference} · Room {booking.room?.roomNumber ?? "—"}</p><p className="mt-1 text-xs text-slate-400">{new Date(booking.checkIn).toLocaleDateString()} – {new Date(booking.checkOut).toLocaleDateString()} · ₹{booking.totalPrice.toLocaleString("en-IN")}</p><p className="mt-2 text-xs capitalize text-slate-400">Status: {booking.status}</p></div><div className="flex flex-wrap gap-2"><button onClick={() => void downloadInvoice(booking._id)} className="rounded-lg border border-white/15 px-3 py-2 text-xs hover:bg-white/5">Download invoice</button>{booking.status === "confirmed" && <button disabled={busy} onClick={() => void cancelBooking(booking._id)} className="rounded-lg border border-rose-300/30 px-3 py-2 text-xs text-rose-200 hover:bg-rose-300/10">Cancel booking</button>}</div></article>) : <p className="rounded-xl bg-white/[0.03] p-5 text-sm text-slate-400">No reservations yet.</p>}</div>{user.role === "admin" && <><h3 className="mt-8 text-lg font-semibold">All reservations</h3><p className="mt-2 text-sm text-slate-400">Showing latest {adminBookings.length} reservations across the hotel.</p><div className="mt-3 space-y-2">{adminBookings.slice(0, 8).map(b => <div key={b._id} className="flex flex-wrap justify-between gap-2 rounded-xl bg-white/[0.03] p-3 text-sm"><span>{b.bookingReference} · {b.room?.roomNumber ?? "Room"}</span><span className="capitalize text-slate-400">{b.status}</span></div>)}</div></>}</section>}
+
         {searched && <section className="pb-12"><div className="mb-5 flex items-end justify-between"><div><p className="text-xs font-semibold tracking-[0.2em] text-amber-200">AVAILABLE INVENTORY</p><h2 className="mt-2 text-2xl font-semibold">Rooms for your stay</h2></div><span className="text-sm text-slate-400">{rooms.length} result(s)</span></div>
           {rooms.length ? <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{rooms.map(room => <article key={room._id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"><div className="flex items-start justify-between"><span className="rounded-lg bg-amber-100/10 p-2 text-amber-200"><BedDouble size={20} /></span><span className="rounded-full border border-white/10 px-3 py-1 text-xs capitalize text-slate-300">{room.type}</span></div><h3 className="mt-5 text-lg font-semibold">Room {room.roomNumber}</h3><p className="mt-1 text-sm text-slate-400">Up to {room.capacity} guests</p><p className="mt-5 text-2xl font-semibold">₹{room.pricePerNight.toLocaleString("en-IN")}<span className="text-sm font-normal text-slate-500"> / night</span></p><p className="mt-1 text-xs text-slate-500">₹{(room.pricePerNight * nights).toLocaleString("en-IN")} total · {nights} night(s)</p><button disabled={busy} onClick={() => void bookRoom(room._id)} className="mt-5 w-full rounded-xl bg-amber-200 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-amber-100 disabled:opacity-60">Reserve this room</button></article>)}</div> : <p className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center text-slate-400">No rooms are available for those dates. Try changing your dates or guest count.</p>}
         </section>}
@@ -180,7 +213,7 @@ function App() {
             <button disabled={busy} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-slate-950 disabled:opacity-60"><LogIn size={17} /> {busy ? "Please wait…" : authMode === "login" ? "Sign in" : "Create account"}</button>
           </form> : <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/5 p-6"><p className="font-semibold text-emerald-100">You are signed in</p><p className="mt-2 text-sm text-slate-400">Search availability above and reserve an available room. You can sign out at any time.</p></div>}
         </section>
-        <footer className="flex flex-col justify-between gap-3 border-t border-white/10 py-6 text-xs text-slate-500 sm:flex-row"><span>StayPilot · Hotel Reservation System</span><span className="inline-flex items-center gap-2"><CalendarDays size={14} /> React · Express · MongoDB</span></footer>
+        <footer className="flex flex-col justify-between gap-3 border-t border-white/10 py-6 text-xs text-slate-500 sm:flex-row"><span>StayPilot · Hotel Reservation System</span><span className="inline-flex items-center gap-2"><CalendarDays size={14} /> Developed by Amit</span></footer>
       </div>
     </main>
   );

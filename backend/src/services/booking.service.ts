@@ -5,6 +5,7 @@ import { Room } from "../models/Room.js";
 
 export interface CreateBookingInput {
   roomId: string;
+  userId: string;
   guestName: string;
   guestEmail: string;
   checkIn: string;
@@ -115,6 +116,7 @@ export async function createBooking(input: CreateBookingInput) {
         [
           {
             bookingReference: `HTL-${randomUUID().slice(0, 8).toUpperCase()}`,
+            user: input.userId,
             guestName,
             guestEmail,
             room: room._id,
