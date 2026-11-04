@@ -1,30 +1,43 @@
-# Hotel Reservation System — Engineering Edition
+# StayPilot — Hotel Reservation System
 
-A production-minded starter for a single hotel with up to 10,000 rooms, built with React, TypeScript, Tailwind CSS, Node.js, Express, and MongoDB.
+A single-hotel reservation platform built with React, TypeScript, Tailwind CSS, Node.js, Express, and MongoDB.
 
-## Current scope
+## Implemented
 
-- React + TypeScript + Vite frontend
-- Express + TypeScript backend
-- Environment validation with Zod
-- Security headers, CORS allowlist, request logging, rate limiting
-- Health endpoint and consistent API 404 response
-- ESLint + Prettier + strict TypeScript configuration
-- Docker Compose for local MongoDB
-- GitHub Actions CI workflow
+- User registration and login with scrypt password hashing and signed, expiring tokens
+- Authenticated profile endpoint and active-user checks
+- Admin-only room creation; public room listing and availability search
+- Authenticated room reservations using the account profile for guest identity
+- Date, guest-capacity, and overlapping-booking validation
+- MongoDB transaction-based reservation creation (requires a replica set)
+- Helmet security headers, CORS allowlist, JSON body limit, request logging, and API rate limiting
+- Backend unit/integration tests and GitHub Actions CI
 
-> This is the foundation, not a finished booking system. Authentication, room inventory, reservations, concurrency-safe booking, payments, and admin features will be implemented in later steps. Do not claim production readiness or load-tested capacity yet.
+Payments, cancellation/refunds, customer booking history, email notifications, and production deployment configuration are not implemented yet.
 
-## Prerequisites
+## Requirements
 
-- Node.js 22 LTS (or a supported current LTS)
+- Node.js 22+
 - npm
-- Git
-- Docker Desktop (optional, for local MongoDB)
+- Docker Desktop (recommended for local MongoDB)
 
-## Setup
+## Local setup
 
-### 1. Backend
+### 1. Start MongoDB
+
+From the repository root:
+
+```bash
+docker compose up -d mongo
+```
+
+The MongoDB service is configured as a single-node replica set because booking creation uses transactions. Initialize the replica set once:
+
+```bash
+docker exec hotel-reservation-mongo mongosh --quiet --eval "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+```
+
+### 2. Configure and start the backend
 
 ```bash
 cd backend
@@ -33,17 +46,21 @@ npm install
 npm run dev
 ```
 
-PowerShell users can copy the file with:
+PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
+npm.cmd install
+npm.cmd run dev
 ```
 
-Health check: http://localhost:5000/api/v1/health
+Health endpoint: http://localhost:5000/api/v1/health
 
-### 2. Frontend
+Set a unique, random `JWT_SECRET` of at least 32 characters before deployment. Never commit `.env`.
 
-Open a second terminal:
+### 3. Start the frontend
+
+In a second terminal:
 
 ```bash
 cd frontend
@@ -51,59 +68,30 @@ npm install
 npm run dev
 ```
 
-Open the URL printed by Vite, usually http://localhost:5173.
+Open http://localhost:5173. The Vite development server proxies `/api` requests to the backend. For another API origin, set `VITE_API_URL` in the frontend environment.
 
-### 3. MongoDB (optional at this foundation stage)
+## API overview
 
-From the repository root:
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/v1/health` | Public | Health check |
+| POST | `/api/v1/auth/register` | Public | Create an account |
+| POST | `/api/v1/auth/login` | Public | Sign in |
+| GET | `/api/v1/auth/me` | Bearer token | Current account |
+| GET | `/api/v1/rooms` | Public | Paginated room inventory |
+| GET | `/api/v1/rooms/availability` | Public | Search available rooms |
+| GET | `/api/v1/rooms/:id` | Public | Room details |
+| POST | `/api/v1/rooms` | Admin token | Create a room |
+| POST | `/api/v1/bookings` | Bearer token | Reserve an available room |
 
-```bash
-docker compose up -d mongo
-```
+New registrations receive the `user` role. Admin role assignment is an operational task and must be performed securely by an authorized operator; public registration cannot grant admin privileges.
 
-MongoDB will be available locally at `mongodb://127.0.0.1:27017/hotel_reservation`.
-The initial health endpoint does not yet require a database connection; database lifecycle and readiness checks will be added in the database step.
+## Checks
 
-## Useful commands
+Backend: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test`, `npm run build`.
 
-Backend:
-- `npm run dev` — development server
-- `npm run typecheck` — strict TypeScript check
-- `npm run lint` — ESLint
-- `npm run format:check` — Prettier check
-- `npm run build` — compile to `dist`
+Frontend: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm run build`.
 
-Frontend:
-- `npm run dev` — Vite development server
-- `npm run typecheck` — TypeScript check
-- `npm run lint` — ESLint
-- `npm run build` — production build
-- `npm run preview` — preview production build
+## Production-readiness notes
 
-## Project structure
-
-```text
-hotel-reservation-system/
-├── .github/workflows/ci.yml
-├── docker-compose.yml
-├── backend/
-│   ├── src/
-│   │   ├── app.ts
-│   │   ├── config/env.ts
-│   │   └── server.ts
-│   ├── .env.example
-│   └── package.json
-└── frontend/
-    ├── src/
-    │   ├── App.tsx
-    │   ├── index.css
-    │   └── main.tsx
-    └── package.json
-```
-
-## Security notes
-
-- Never commit `.env` or credentials.
-- Keep payment secrets server-side only.
-- The current global rate limit is a starter default and should be tuned per route and deployment topology.
-- Configure `CLIENT_URL` to the exact frontend origin for the environment.
+This repository is not yet production-ready. Before launch, add booking history and cancellation policies, payment-provider integration, email notifications, stronger token lifecycle/revocation, audit logging, deployment secrets, backups, monitoring, and load/security testing. Do not expose database credentials or payment secrets in frontend code.
