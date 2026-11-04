@@ -61,7 +61,6 @@ bookingRouter.post("/", authenticate, async (req, res, next) => {
   }
 });
 
-
 // A customer can only view their own reservations.
 bookingRouter.get("/mine", authenticate, async (_req, res, next) => {
   try {
@@ -71,23 +70,29 @@ bookingRouter.get("/mine", authenticate, async (_req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
     res.status(200).json({ success: true, data: bookings });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Cancellation is restricted to the booking owner or an administrator.
 bookingRouter.patch("/:id/cancel", authenticate, async (req, res, next) => {
   try {
     const auth = res.locals.auth as AuthContext;
-    const filter = auth.role === "admin"
-      ? { _id: req.params.id, status: "confirmed" }
-      : { _id: req.params.id, user: auth.userId, status: "confirmed" };
+    const filter =
+      auth.role === "admin"
+        ? { _id: req.params.id, status: "confirmed" }
+        : { _id: req.params.id, user: auth.userId, status: "confirmed" };
     const booking = await Booking.findOneAndUpdate(
       filter,
       { $set: { status: "cancelled" } },
       { new: true, runValidators: true },
     ).populate("room", "roomNumber type");
     if (!booking) {
-      res.status(404).json({ success: false, error: { code: "NOT_FOUND", message: "Active booking not found" } });
+      res.status(404).json({
+        success: false,
+        error: { code: "NOT_FOUND", message: "Active booking not found" },
+      });
       return;
     }
     res.status(200).json({ success: true, data: booking });
@@ -99,7 +104,10 @@ bookingRouter.get("/admin/all", authenticate, async (_req, res, next) => {
   try {
     const auth = res.locals.auth as AuthContext;
     if (auth.role !== "admin") {
-      res.status(403).json({ success: false, error: { code: "FORBIDDEN", message: "Administrator access is required" } });
+      res.status(403).json({
+        success: false,
+        error: { code: "FORBIDDEN", message: "Administrator access is required" },
+      });
       return;
     }
     const bookings = await Booking.find()
@@ -110,7 +118,6 @@ bookingRouter.get("/admin/all", authenticate, async (_req, res, next) => {
     res.status(200).json({ success: true, data: bookings });
   } catch (error) { next(error); }
 });
-
 
 function pdfEscape(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/[^\x20-\x7E]/g, "?");
@@ -141,8 +148,8 @@ function createInvoicePdf(lines: string[]): Buffer {
 bookingRouter.get("/:id/invoice", authenticate, async (req, res, next) => {
   try {
     const auth = res.locals.auth as AuthContext;
-    const filter = auth.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, user: auth.userId };
-    const booking = await Booking.findOne(filter).populate("room", "roomNumber type").lean();
+    const filter =\n      auth.role === "admin"\n        ? { _id: req.params.id }\n        : { _id: req.params.id, user: auth.userId };
+    const booking = await Booking.findOne(filter)\n      .populate("room", "roomNumber type")\n      .lean();
     if (!booking) {
       res.status(404).json({ success: false, error: { code: "NOT_FOUND", message: "Booking not found" } });
       return;
