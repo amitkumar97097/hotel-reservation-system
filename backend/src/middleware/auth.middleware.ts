@@ -20,7 +20,9 @@ export const authenticate: RequestHandler = async (req, res, next) => {
 
   try {
     const payload = verifyToken(authorization.slice(7).trim());
-    const user = await User.findById(payload.userId).select("email role isActive");
+    const user = await User.findById(payload.userId).select(
+      "email role isActive",
+    );
     if (!user || !user.isActive) {
       res.status(401).json({
         success: false,
@@ -39,7 +41,10 @@ export const authenticate: RequestHandler = async (req, res, next) => {
     if (error instanceof AuthError) {
       res.status(error.statusCode).json({
         success: false,
-        error: { code: "UNAUTHORIZED", message: "Invalid or expired authentication token" },
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Invalid or expired authentication token",
+        },
       });
       return;
     }
