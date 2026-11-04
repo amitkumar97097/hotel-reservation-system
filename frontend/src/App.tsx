@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BedDouble, CalendarDays, CheckCircle2, LogIn, LogOut, Search, ShieldCheck, UserRound } from "lucide-react";
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const API_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 type User = { id: string; name: string; email: string; role: "user" | "admin" };
 type Room = { _id: string; roomNumber: string; type: "standard" | "deluxe" | "suite"; capacity: number; pricePerNight: number };
@@ -87,16 +87,21 @@ function App() {
     } finally { setBusy(false); }
   }
 
+  async function loadAvailableRooms() {
+    if (!nights) throw new Error("Check-out must be after check-in.");
+    const query = new URLSearchParams({ checkIn, checkOut, guests: String(guests) });
+    const result = await api<{ rooms: Room[]; count: number }>(`/rooms/availability?${query.toString()}`);
+    setRooms(result.rooms);
+    setSearched(true);
+    return result.count;
+  }
+
   async function searchRooms(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setError(""); setMessage(""); setSearched(false);
     try {
-      if (!nights) throw new Error("Check-out must be after check-in.");
-      const query = new URLSearchParams({ checkIn, checkOut, guests: String(guests) });
-      const result = await api<{ rooms: Room[]; count: number }>(`/rooms/availability?${query.toString()}`);
-      setRooms(result.rooms);
-      setSearched(true);
-      setMessage(`${result.count} available room(s) found for ${nights} night(s).`);
+      const count = await loadAvailableRooms();
+      setMessage(`${count} available room(s) found for ${nights} night(s).`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to search rooms.");
     } finally { setBusy(false); }
@@ -115,7 +120,7 @@ function App() {
         body: JSON.stringify({ roomId, checkIn, checkOut, guests }),
       }, token);
       setMessage(`Reservation confirmed! Reference: ${booking.bookingReference}. Total: ₹${booking.totalPrice.toLocaleString("en-IN")}.`);
-      await searchRooms(new Event("submit") as unknown as React.FormEvent<HTMLFormElement>);
+      await loadAvailableRooms();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to complete booking.");
     } finally { setBusy(false); }
