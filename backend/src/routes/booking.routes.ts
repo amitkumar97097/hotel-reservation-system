@@ -96,7 +96,9 @@ bookingRouter.patch("/:id/cancel", authenticate, async (req, res, next) => {
       return;
     }
     res.status(200).json({ success: true, data: booking });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Administrator-only reservation overview.
@@ -124,7 +126,13 @@ function pdfEscape(value: string): string {
 }
 
 function createInvoicePdf(lines: string[]): Buffer {
-  const commands = ["BT", "/F1 16 Tf", "50 790 Td", "(StayPilot - Booking Invoice) Tj", "/F1 11 Tf"];
+  const commands = [
+    "BT",
+    "/F1 16 Tf",
+    "50 790 Td",
+    "(StayPilot - Booking Invoice) Tj",
+    "/F1 11 Tf",
+  ];
   for (const line of lines) commands.push("0 -24 Td", `(${pdfEscape(line)}) Tj`);
   commands.push("ET");
   const stream = commands.join("\n");
@@ -156,7 +164,10 @@ bookingRouter.get("/:id/invoice", authenticate, async (req, res, next) => {
       .populate("room", "roomNumber type")
       .lean();
     if (!booking) {
-      res.status(404).json({ success: false, error: { code: "NOT_FOUND", message: "Booking not found" } });
+      res.status(404).json({
+        success: false,
+        error: { code: "NOT_FOUND", message: "Booking not found" },
+      });
       return;
     }
     const room = booking.room as unknown as { roomNumber?: string; type?: string };
@@ -175,7 +186,10 @@ bookingRouter.get("/:id/invoice", authenticate, async (req, res, next) => {
     ];
     const pdf = createInvoicePdf(lines);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="invoice-${booking.bookingReference}.pdf"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="invoice-${booking.bookingReference}.pdf"`,
+    );
     res.status(200).send(pdf);
   } catch (error) { next(error); }
 });
