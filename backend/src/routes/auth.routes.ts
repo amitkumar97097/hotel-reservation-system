@@ -21,7 +21,11 @@ function sendError(error: unknown, res: Response, next: (error?: unknown) => voi
   if (error instanceof z.ZodError) {
     res.status(400).json({
       success: false,
-      error: { code: "VALIDATION_ERROR", message: "Invalid authentication input", details: error.issues },
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "Invalid authentication input",
+        details: error.issues,
+      },
     });
     return;
   }
@@ -60,7 +64,10 @@ authRouter.get("/me", authenticate, async (_req, res, next) => {
     const auth = res.locals.auth as AuthContext;
     const user = await User.findById(auth.userId).select("name email role isActive");
     if (!user || !user.isActive) {
-      res.status(401).json({ success: false, error: { code: "UNAUTHORIZED", message: "Account is unavailable" } });
+      res.status(401).json({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Account is unavailable" },
+      });
       return;
     }
     res.status(200).json({

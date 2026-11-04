@@ -19,7 +19,11 @@ export const authenticate: RequestHandler = (req, res, next) => {
 
   try {
     const payload = verifyToken(authorization.slice(7).trim());
-    res.locals.auth = { userId: payload.userId, email: payload.email, role: payload.role } satisfies AuthContext;
+    res.locals.auth = {
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role,
+    } satisfies AuthContext;
     next();
   } catch (error) {
     const statusCode = error instanceof AuthError ? error.statusCode : 401;

@@ -24,10 +24,7 @@ const availabilitySchema = z.object({
   guests: z.coerce.number().int().min(1).max(20),
 });
 
-function handleRouteError(
-  error: unknown,
-  res: Response,
-) {
+function handleRouteError(error: unknown, res: Response) {
   if (error instanceof RoomError) {
     res.status(error.statusCode).json({
       success: false,
