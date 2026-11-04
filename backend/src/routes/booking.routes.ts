@@ -1,35 +1,44 @@
 import { Router } from "express";
 import { z } from "zod";
+import { authenticate, type AuthContext } from "../middleware/auth.middleware.js";
+import { User } from "../models/User.js";
 import { BookingError, createBooking } from "../services/booking.service.js";
 
 const bookingRouter = Router();
 
 const createBookingSchema = z.object({
   roomId: z.string().min(1),
-  guestName: z.string().trim().min(1).max(100),
-  guestEmail: z.string().trim().email().max(254),
   checkIn: z.string(),
   checkOut: z.string(),
   guests: z.number().int().positive(),
 });
 
-bookingRouter.post("/", async (req, res, next) => {
+bookingRouter.post("/", authenticate, async (req, res, next) => {
   try {
     const input = createBookingSchema.parse(req.body);
-    const booking = await createBooking(input);
+    const auth = res.locals.auth as AuthContext;
+    const user = await User.findById(auth.userId).select("name email isActive");
 
-    res.status(201).json({
-      success: true,
-      data: booking,
+    if (!user || !user.isActive) {
+      res.status(401).json({
+        success: false,
+        error: { code: "UNAUTHORIZED", message: "Account is unavailable" },
+      });
+      return;
+    }
+
+    const booking = await createBooking({
+      ...input,
+      guestName: user.name,
+      guestEmail: user.email,
     });
+
+    res.status(201).json({ success: true, data: booking });
   } catch (error: unknown) {
     if (error instanceof BookingError) {
       res.status(error.statusCode).json({
         success: false,
-        error: {
-          code: "BOOKING_ERROR",
-          message: error.message,
-        },
+        error: { code: "BOOKING_ERROR", message: error.message },
       });
       return;
     }
