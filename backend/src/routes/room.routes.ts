@@ -111,7 +111,11 @@ roomRouter.get("/availability", async (req, res) => {
 roomRouter.patch("/:id", authenticate, requireAdmin, async (req, res) => {
   try {
     const input = updateRoomSchema.parse(req.body);
-    const room = await updateRoom(req.params.id, input);
+    const roomId = req.params.id;
+    if (typeof roomId !== "string") {
+      throw new RoomError("Invalid room ID", 400);
+    }
+    const room = await updateRoom(roomId, input);
     res.status(200).json({
       success: true,
       data: room,
