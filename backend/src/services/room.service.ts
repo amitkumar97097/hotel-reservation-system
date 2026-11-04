@@ -199,7 +199,9 @@ export async function updateRoom(
     throw new RoomError("Invalid room ID", 400);
   }
   const update = { ...input };
-  if (update.roomNumber) update.roomNumber = update.roomNumber.trim();
+  if (update.roomNumber) {
+    update.roomNumber = update.roomNumber.trim();
+  }
   try {
     const room = await Room.findByIdAndUpdate(
       id,
@@ -211,7 +213,9 @@ export async function updateRoom(
     }
     return room;
   } catch (error: unknown) {
-    if (error instanceof RoomError) throw error;
+    if (error instanceof RoomError) {
+      throw error;
+    }
     if (
       typeof error === "object" &&
       error !== null &&
