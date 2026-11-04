@@ -77,7 +77,9 @@ export async function listRooms(input: ListRoomsInput) {
 
   const [rooms, total] = await Promise.all([
     Room.find(filter)
-      .select("roomNumber type capacity pricePerNight isActive createdAt updatedAt")
+      .select(
+        "roomNumber type capacity pricePerNight isActive createdAt updatedAt",
+      )
       .sort({ roomNumber: 1, _id: 1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -181,13 +183,15 @@ export async function getAvailableRooms(
   };
 }
 
-export const updateRoomSchema = z.object({
-  roomNumber: z.string().trim().min(1).max(20).optional(),
-  type: roomTypeSchema.optional(),
-  capacity: z.number().int().min(1).max(20).optional(),
-  pricePerNight: z.number().finite().min(0).max(1_000_000).optional(),
-  isActive: z.boolean().optional(),
-}).refine((value) => Object.keys(value).length > 0, {
+export const updateRoomSchema = z
+  .object({
+    roomNumber: z.string().trim().min(1).max(20).optional(),
+    type: roomTypeSchema.optional(),
+    capacity: z.number().int().min(1).max(20).optional(),
+    pricePerNight: z.number().finite().min(0).max(1_000_000).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
   message: "At least one room field is required",
 });
 
@@ -199,9 +203,11 @@ export async function updateRoom(
     throw new RoomError("Invalid room ID", 400);
   }
   const update = { ...input };
+
   if (update.roomNumber) {
     update.roomNumber = update.roomNumber.trim();
   }
+
   try {
     const room = await Room.findByIdAndUpdate(
       id,
@@ -211,6 +217,7 @@ export async function updateRoom(
     if (!room) {
       throw new RoomError("Room not found", 404);
     }
+
     return room;
   } catch (error: unknown) {
     if (error instanceof RoomError) {
