@@ -32,7 +32,7 @@ function tomorrowString() {
 const roomShowcase = [
   { title: "Classic Room", detail: "Thoughtful comfort for a restful night", price: "From ₹2,500", image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1000&q=85", tag: "ESSENTIAL COMFORT" },
   { title: "Deluxe Room", detail: "More space, elevated details, better views", price: "From ₹4,000", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=85", tag: "GUEST FAVOURITE" },
-  { title: "Signature Suite", detail: "A little more room for a special escape", price: "From ₹7,000", image: "https://images.unsplash.com/photo-1611892440504-0a5b9c5f0c4b?auto=format&fit=crop&w=1000&q=85", tag: "EXTRAORDINARY STAYS" },
+  { title: "Signature Suite", detail: "A little more room for a special escape", price: "From ₹7,000", image: "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1000&q=85", tag: "EXTRAORDINARY STAYS" },
 ];
 
 function App() {
