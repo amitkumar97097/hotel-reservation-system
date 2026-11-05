@@ -1,7 +1,7 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import {
-  ArrowRight, BedDouble, CalendarDays, Check, CheckCircle2, ChevronDown,
-  CircleUserRound, Coffee, Dumbbell, KeyRound, LogIn, LogOut, Menu,
+  ArrowRight, BedDouble, CheckCircle2, Coffee, Dumbbell, KeyRound, LogOut, Menu,
   ShieldCheck, Sparkles, Star, Waves, Wifi, X
 } from "lucide-react";
 
