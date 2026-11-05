@@ -31,6 +31,11 @@ export class RoomError extends Error {
 export async function createRoom(input: z.infer<typeof createRoomSchema>) {
   const roomNumber = input.roomNumber.trim();
 
+  const inventoryCount = await Room.countDocuments({});
+  if (inventoryCount >= 10_000) {
+    throw new RoomError("Hotel inventory limit of 10,000 rooms has been reached", 409);
+  }
+
   const existingRoom = await Room.findOne({ roomNumber }).lean();
 
   if (existingRoom) {
